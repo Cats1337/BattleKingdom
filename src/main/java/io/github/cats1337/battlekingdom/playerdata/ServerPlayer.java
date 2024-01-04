@@ -19,7 +19,8 @@ public class ServerPlayer {
     private String teamName;
     private String teamColor; // set the team colors to be RED, GREEN, BLUE, YELLOW
     private boolean isTeamLeader;
-    private boolean isAlive;
+    private boolean isTeamAlive;
+    private boolean isEliminated;
     private boolean isExemptFromKick;
 
     // Constructor to set default team color based on team name

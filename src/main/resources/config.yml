@@ -4,24 +4,28 @@ DUNGEON_MESSAGE: "&cYour king has fallen, you have been sent to the dungeon." # 
 teams:
   TEAM1:
     name: RED
+    leader: null
     world: world
     x: 0.0
     y: 90.0
     z: 0.0
   TEAM2:
     name: BLUE
+    leader: null
     world: world
     x: 0.0
     y: 90.0
     z: 0.0
   TEAM3:
     name: GREEN
+    leader: null
     world: world
     x: 0.0
     y: 90.0
     z: 0.0
   TEAM4:
     name: YELLOW
+    leader: null
     world: world
     x: 0.0
     y: 90.0

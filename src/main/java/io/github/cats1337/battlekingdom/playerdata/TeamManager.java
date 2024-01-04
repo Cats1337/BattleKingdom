@@ -4,12 +4,19 @@ import io.github.cats1337.battlekingdom.BattleKingdom;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import com.marcusslover.plus.lib.text.Text;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class TeamManager {
     static final BattleKingdom plugin = BattleKingdom.getInstance();
+    static FileConfiguration config = BattleKingdom.getInstance().getConfig();
+
 
     public static void assignRandomTeam(Player p) {
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
@@ -31,14 +38,97 @@ public class TeamManager {
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
         ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
         serverPlayer.setTeamLeader(true);
-        serverPlayer.setTeamName(team);
+        config.set("teams." + team + ".leader", p.getName());
         playerContainer.writeData(p.getUniqueId(), serverPlayer);
+    }
+
+    public static String getTeamLeader(String team) {
+        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
+        for (ServerPlayer serverPlayer : playerContainer.getValues()) {
+            if (serverPlayer.getTeamName().equals(team) && serverPlayer.isTeamLeader()) {
+                return serverPlayer.getPlayerName();
+            }
+        }
+        return null;
+    }
+
+    public static String getTeamMembers(String team) {
+        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
+        List<String> teamMembers = new ArrayList<>();
+
+        for (ServerPlayer serverPlayer : playerContainer.getValues()) {
+            if (team.equals(serverPlayer.getTeamName())) {
+                if (serverPlayer.isTeamAlive()) {
+                    teamMembers.add("&a" + serverPlayer.getPlayerName());
+                } else {
+                    teamMembers.add("&c&m" + serverPlayer.getPlayerName());
+                }
+            }
+        }
+
+        if (teamMembers.isEmpty()) {
+            return "No members in the team";
+        }
+
+        return String.join("&7, ", teamMembers);
+    }
+
+    public static String getTeamColorCode(String team) {
+        String key = "teams." + team + ".color";
+        String color = plugin.getConfig().getString(key, "GREY");
+        return switch (color) {
+            case "GREEN" -> "&a";
+            case "BLUE" -> "&b";
+            case "RED" -> "&c";
+            case "PINK" -> "&d";
+            case "YELLOW" -> "&e";
+            case "WHITE" -> "&f";
+            case "BLACK" -> "&0";
+            case "DARK_BLUE" -> "&1";
+            case "DARK_GREEN" -> "&2";
+            case "DARK_AQUA" -> "&3";
+            case "DARK_RED" -> "&4";
+            case "PURPLE" -> "&5";
+            case "GOLD" -> "&6";
+            case "GREY" -> "&7";
+            case "DARK_GREY" -> "&8";
+            case "LIGHT_BLUE" -> "&9";
+            default -> "&r";
+        };
+    }
+
+    public static String getLeaderStatus(String team) {
+        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
+        for (ServerPlayer serverPlayer : playerContainer.getValues()) {
+            if (serverPlayer.getTeamName().equals(team) && serverPlayer.isTeamLeader()) {
+                if (serverPlayer.isTeamAlive()) {
+                    return "&6&l" + serverPlayer.getPlayerName();
+                } else {
+                    return "&c&m" + serverPlayer.getPlayerName();
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String getTeamStatus(String team) {
+        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
+        for (ServerPlayer serverPlayer : playerContainer.getValues()) {
+            if (serverPlayer.getTeamName().equals(team)) {
+                if (serverPlayer.isTeamAlive()) {
+                    return "&a" + serverPlayer.getTeamName();
+                } else {
+                    return "&c&m" + serverPlayer.getTeamName();
+                }
+            }
+        }
+        return null;
     }
 
     public static void setSpectatorMode(Player p) {
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
         ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
-        serverPlayer.setAlive(false);
+        serverPlayer.setTeamAlive(false);
         playerContainer.writeData(p.getUniqueId(), serverPlayer);
         p.setGameMode(GameMode.SPECTATOR);
         Text.of("&7You're exempt from the dungeon, you are now a spectator.").send(p);
@@ -50,7 +140,7 @@ public class TeamManager {
         p.setBedSpawnLocation(spawnLocation, true);
     }
 
-    private static Location getSpawnLocationForTeam(String team) {
+    public static Location getSpawnLocationForTeam(String team) {
         double x = plugin.getConfig().getDouble("teams." + team + ".x");
         double y = plugin.getConfig().getDouble("teams." + team + ".y");
         double z = plugin.getConfig().getDouble("teams." + team + ".z");
@@ -67,4 +157,25 @@ public class TeamManager {
         plugin.getConfig().set("teams." + team + ".world", location.getWorld().getName());
         Bukkit.getScheduler().runTask(plugin, plugin::saveConfig);
     }
+
+
+    public static List<String> getTeamNames() {
+        return new ArrayList<>(config.getConfigurationSection("teams").getKeys(false));
+    }
+
+    // get team leaders from config
+
+    public static List<String> getTeamLeaders() {
+        List<String> teamLeaders = new ArrayList<>();
+        for (String team : getTeamNames()) {
+            String teamLeader = config.getString("teams." + team + ".leader");
+            if (teamLeader != null) {
+                teamLeaders.add(teamLeader);
+            }
+        }
+        return teamLeaders;
+    }
+
+    // get spawn points from config
+
 }
