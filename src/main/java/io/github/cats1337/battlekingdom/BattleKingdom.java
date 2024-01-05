@@ -1,5 +1,6 @@
 package io.github.cats1337.battlekingdom;
 
+import io.github.cats1337.battlekingdom.commands.BattleKingdomCommands;
 import io.github.cats1337.battlekingdom.playerdata.PlayerContainer;
 import com.marcusslover.plus.lib.command.CommandManager;
 import com.marcusslover.plus.lib.container.ContainerManager;
@@ -19,19 +20,17 @@ public final class BattleKingdom extends JavaPlugin {
         saveDefaultConfig();
 
         cmdManager = CommandManager.get(this);
-//        cmdManager.register(new Po());
+        cmdManager.register(new BattleKingdomCommands());
+
 
         containerManager = new ContainerManager();
         containerManager.register("players", new PlayerContainer());
         containerManager.init(this);
-
-
     }
 
     @Override
     public void onDisable() {
         cmdManager.clearCommands();
-//        placeholder.unregister();
     }
 
     public ContainerManager getContainerManager() {return containerManager;}

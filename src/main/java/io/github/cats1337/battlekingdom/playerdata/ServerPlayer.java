@@ -4,6 +4,8 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
@@ -15,7 +17,7 @@ public class ServerPlayer {
     private final UUID uuid;
 
     @Setter(AccessLevel.PUBLIC)
-    private String playerName;
+    private String playerName; // set to player's minecraft username
     private String teamName;
     private String teamColor; // set the team colors to be RED, GREEN, BLUE, YELLOW
     private boolean isTeamLeader;
@@ -24,12 +26,28 @@ public class ServerPlayer {
     private boolean isExemptFromKick;
 
     // Constructor to set default team color based on team name
+//    public ServerPlayer(UUID uuid, String playerName, String teamName) {
+//        this.uuid = uuid;
+//        this.playerName = (playerName != null && !playerName.isEmpty()) ? playerName : "";
+//        this.teamName = (teamName != null) ? teamName : "";
+//        this.teamColor = getDefaultTeamColor(this.teamName);
+//    }
+
     public ServerPlayer(UUID uuid, String playerName, String teamName) {
         this.uuid = uuid;
         this.playerName = (playerName != null) ? playerName : "";
+
+        // Attempt to get the player's username from Bukkit
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null) {
+            this.playerName = player.getName();
+        }
+
         this.teamName = (teamName != null) ? teamName : "";
         this.teamColor = getDefaultTeamColor(this.teamName);
     }
+
+
 
     // Method to get default team color based on team name
     private String getDefaultTeamColor(String team) {

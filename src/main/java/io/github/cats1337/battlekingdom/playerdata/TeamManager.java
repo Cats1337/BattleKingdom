@@ -21,7 +21,9 @@ public class TeamManager {
     public static void assignRandomTeam(Player p) {
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
         ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
-
+        if (serverPlayer.isTeamLeader()) {
+            serverPlayer.setTeamLeader(false);
+        }
         String randomTeam = getRandomTeam();
         serverPlayer.setTeamName(randomTeam);
         playerContainer.writeData(p.getUniqueId(), serverPlayer);
@@ -38,8 +40,9 @@ public class TeamManager {
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
         ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
         serverPlayer.setTeamLeader(true);
-        config.set("teams." + team + ".leader", p.getName());
         playerContainer.writeData(p.getUniqueId(), serverPlayer);
+        config.set("teams." + team + ".leader", p.getName());
+        Bukkit.getScheduler().runTask(plugin, plugin::saveConfig);
     }
 
     public static String getTeamLeader(String team) {
@@ -52,6 +55,7 @@ public class TeamManager {
         return null;
     }
 
+    // TODO: Doesn't output.
     public static String getTeamMembers(String team) {
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
         List<String> teamMembers = new ArrayList<>();
@@ -76,6 +80,7 @@ public class TeamManager {
     public static String getTeamColorCode(String team) {
         String key = "teams." + team + ".color";
         String color = plugin.getConfig().getString(key, "GREY");
+        color = color.toUpperCase();
         return switch (color) {
             case "GREEN" -> "&a";
             case "BLUE" -> "&b";
@@ -116,9 +121,9 @@ public class TeamManager {
         for (ServerPlayer serverPlayer : playerContainer.getValues()) {
             if (serverPlayer.getTeamName().equals(team)) {
                 if (serverPlayer.isTeamAlive()) {
-                    return "&a" + serverPlayer.getTeamName();
+                    return "&a Alive!";
                 } else {
-                    return "&c&m" + serverPlayer.getTeamName();
+                    return "&c&m Eliminated";
                 }
             }
         }
@@ -135,19 +140,25 @@ public class TeamManager {
     }
 
     public static void setPlayerSpawnPoint(Player p, String team) {
-        Location spawnLocation = getSpawnLocationForTeam(team);
-        p.teleport(spawnLocation);
-        p.setBedSpawnLocation(spawnLocation, true);
-    }
-
-    public static Location getSpawnLocationForTeam(String team) {
         double x = plugin.getConfig().getDouble("teams." + team + ".x");
         double y = plugin.getConfig().getDouble("teams." + team + ".y");
         double z = plugin.getConfig().getDouble("teams." + team + ".z");
         String worldName = plugin.getConfig().getString("teams." + team + ".world");
 
         assert worldName != null;
-        return new Location(Bukkit.getWorld(worldName), x, y, z);
+
+        Location spawnLocation = new Location(Bukkit.getWorld(worldName), x, y, z);
+
+        p.teleport(spawnLocation);
+        p.setBedSpawnLocation(spawnLocation, true);
+    }
+
+    public static String getSpawnLocationForTeam(String team) {
+        double x = plugin.getConfig().getDouble("teams." + team + ".x");
+        double y = plugin.getConfig().getDouble("teams." + team + ".y");
+        double z = plugin.getConfig().getDouble("teams." + team + ".z");
+
+        return (x + ", " + y + ", " + z);
     }
 
     public static void setTeamSpawnPoint(String team, Location location) {
@@ -163,8 +174,6 @@ public class TeamManager {
         return new ArrayList<>(config.getConfigurationSection("teams").getKeys(false));
     }
 
-    // get team leaders from config
-
     public static List<String> getTeamLeaders() {
         List<String> teamLeaders = new ArrayList<>();
         for (String team : getTeamNames()) {
@@ -175,7 +184,5 @@ public class TeamManager {
         }
         return teamLeaders;
     }
-
-    // get spawn points from config
 
 }
