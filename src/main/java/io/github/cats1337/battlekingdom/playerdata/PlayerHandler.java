@@ -2,6 +2,7 @@ package io.github.cats1337.battlekingdom.playerdata;
 
 
 import io.github.cats1337.battlekingdom.BattleKingdom;
+import org.bukkit.BanEntry;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -38,17 +39,29 @@ public class PlayerHandler implements Listener {
         return BattleKingdom.getInstance().getContainerManager().getByType(PlayerContainer.class).get();
     }
 
+    // TODO: Doesn't actually ban, might just use console :/
     public static void tempBanPlayer(Player p, int dungeonTime, String reason) {
         long durationInMillis = (long) dungeonTime * 60 * 60 * 1000;
         Date banTime = new Date(System.currentTimeMillis() + durationInMillis);
 
-        BanList<Player> banList = Bukkit.getBanList(BanList.Type.PROFILE);
-        banList.addBan(p, reason, banTime , null);
+        BanList banList = Bukkit.getBanList(BanList.Type.NAME);
+        BanEntry banEntry = banList.getBanEntry(p.getName());
+
+        if (banEntry == null) {
+            banList.addBan(p.getName(), reason, banTime, null);
+        } else {
+            banEntry.setExpiration(banTime);
+        }
     }
 
     public static void unbanPlayer(Player p){
-        BanList<Player> banList = Bukkit.getBanList(BanList.Type.PROFILE);
-        banList.pardon(p);
+        if (p.isBanned()) {
+            BanList banList = Bukkit.getBanList(BanList.Type.PROFILE);
+            BanEntry banEntry = banList.getBanEntry(p.getName());
+            if (banEntry != null) {
+                banList.pardon(banEntry);
+            }
+        }
     }
 
 

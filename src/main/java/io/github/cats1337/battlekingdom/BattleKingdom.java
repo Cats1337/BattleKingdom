@@ -1,9 +1,14 @@
 package io.github.cats1337.battlekingdom;
 
 import io.github.cats1337.battlekingdom.commands.BattleKingdomCommands;
+import io.github.cats1337.battlekingdom.events.PlayerListener;
 import io.github.cats1337.battlekingdom.playerdata.PlayerContainer;
+
 import com.marcusslover.plus.lib.command.CommandManager;
 import com.marcusslover.plus.lib.container.ContainerManager;
+import io.github.cats1337.battlekingdom.playerdata.PlayerHandler;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class BattleKingdom extends JavaPlugin {
@@ -22,10 +27,13 @@ public final class BattleKingdom extends JavaPlugin {
         cmdManager = CommandManager.get(this);
         cmdManager.register(new BattleKingdomCommands());
 
-
         containerManager = new ContainerManager();
         containerManager.register("players", new PlayerContainer());
         containerManager.init(this);
+
+        PluginManager pm = Bukkit.getPluginManager();
+        pm.registerEvents(new PlayerHandler(), this);
+        pm.registerEvents(new PlayerListener(), this);
     }
 
     @Override

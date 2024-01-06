@@ -308,41 +308,7 @@ public class BattleKingdomCommands implements ICommand {
                     } else {
                         Text.of("&cYou do not have permission to use this command.").send(sender);
                     }
-                case "respawn": // TODO: FIX
-//                    org.bukkit.command.CommandException: Unhandled exception executing 'kingdom respawn player iCats' in com.marcusslover.plus.lib.command.CommandManager$1(kingdom)
-//                    at org.bukkit.command.SimpleCommandMap.dispatch(SimpleCommandMap.java:178) ~[purpur-api-1.20.1-R0.1-SNAPSHOT.jar:?]
-//                    at org.bukkit.craftbukkit.v1_20_R1.CraftServer.dispatchCommand(CraftServer.java:1021) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at org.bukkit.craftbukkit.v1_20_R1.command.BukkitCommandWrapper.run(BukkitCommandWrapper.java:64) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at com.mojang.brigadier.CommandDispatcher.execute(CommandDispatcher.java:265) ~[purpur-1.20.1.jar:?]
-//                    at net.minecraft.commands.Commands.performCommand(Commands.java:332) ~[?:?]
-//                    at net.minecraft.commands.Commands.performCommand(Commands.java:316) ~[?:?]
-//                    at net.minecraft.server.network.ServerGamePacketListenerImpl.performChatCommand(ServerGamePacketListenerImpl.java:2447) ~[?:?]
-//                    at net.minecraft.server.network.ServerGamePacketListenerImpl.lambda$handleChatCommand$22(ServerGamePacketListenerImpl.java:2407) ~[?:?]
-//                    at net.minecraft.util.thread.BlockableEventLoop.lambda$submitAsync$0(BlockableEventLoop.java:59) ~[?:?]
-//                    at java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768) ~[?:?]
-//                    at net.minecraft.server.TickTask.run(TickTask.java:18) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at net.minecraft.util.thread.BlockableEventLoop.doRunTask(BlockableEventLoop.java:153) ~[?:?]
-//                    at net.minecraft.util.thread.ReentrantBlockableEventLoop.doRunTask(ReentrantBlockableEventLoop.java:24) ~[?:?]
-//                    at net.minecraft.server.MinecraftServer.doRunTask(MinecraftServer.java:1365) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at net.minecraft.server.MinecraftServer.d(MinecraftServer.java:197) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at net.minecraft.util.thread.BlockableEventLoop.pollTask(BlockableEventLoop.java:126) ~[?:?]
-//                    at net.minecraft.server.MinecraftServer.pollTaskInternal(MinecraftServer.java:1342) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at net.minecraft.server.MinecraftServer.pollTask(MinecraftServer.java:1335) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at net.minecraft.util.thread.BlockableEventLoop.managedBlock(BlockableEventLoop.java:136) ~[?:?]
-//                    at net.minecraft.server.MinecraftServer.waitUntilNextTick(MinecraftServer.java:1313) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at net.minecraft.server.MinecraftServer.runServer(MinecraftServer.java:1201) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at net.minecraft.server.MinecraftServer.lambda$spin$0(MinecraftServer.java:322) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at java.lang.Thread.run(Thread.java:840) ~[?:?]
-//                    Caused by: java.lang.ClassCastException: class org.bukkit.craftbukkit.v1_20_R1.entity.CraftPlayer cannot be cast to class com.destroystokyo.paper.profile.PlayerProfile (org.bukkit.craftbukkit.v1_20_R1.entity.CraftPlayer and com.destroystokyo.paper.profile.PlayerProfile are in unnamed module of loader java.net.URLClassLoader @7e32c033)
-//                    at org.bukkit.craftbukkit.v1_20_R1.ban.CraftProfileBanList.pardon(CraftProfileBanList.java:19) ~[purpur-1.20.1.jar:git-Purpur-2051]
-//                    at io.github.cats1337.battlekingdom.playerdata.PlayerHandler.unbanPlayer(PlayerHandler.java:51) ~[BattleKingdom-1.0.0.jar:?]
-//                    at io.github.cats1337.battlekingdom.commands.BattleKingdomCommands.lambda$1(BattleKingdomCommands.java:241) ~[BattleKingdom-1.0.0.jar:?]
-//                    at java.lang.Iterable.forEach(Iterable.java:75) ~[?:?]
-//                    at java.util.Collections$UnmodifiableCollection.forEach(Collections.java:1092) ~[?:?]
-//                    at io.github.cats1337.battlekingdom.commands.BattleKingdomCommands.execute(BattleKingdomCommands.java:236) ~[BattleKingdom-1.0.0.jar:?]
-//                    at com.marcusslover.plus.lib.command.CommandManager$1.execute(CommandManager.java:61) ~[BattleKingdom-1.0.0.jar:?]
-//                    at org.bukkit.command.SimpleCommandMap.dispatch(SimpleCommandMap.java:168) ~[purpur-api-1.20.1-R0.1-SNAPSHOT.jar:?]
-//        ... 22 more
+                case "respawn":
                     if (args.length < 2) {
                         Text.of("&cInvalid Command Usage.").send(sender);
                         Text.of("\n&f/kingdom respawn &e<player|team>\n" +

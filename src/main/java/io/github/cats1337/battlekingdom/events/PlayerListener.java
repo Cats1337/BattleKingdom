@@ -8,16 +8,18 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-public class PlayerListeners implements Listener {
+public class PlayerListener implements Listener {
 
     FileConfiguration config = BattleKingdom.getInstance().getConfig();
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
+        System.out.println("onPlayerJoin: " + e + p.getName());
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
         ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
 
@@ -38,6 +40,30 @@ public class PlayerListeners implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent e) {
         Player p = e.getPlayer();
+        System.out.println("onPlayerDeath: " + e + p.getName());
+        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
+        ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
+
+        if(serverPlayer.isTeamLeader()) {
+            serverPlayer.setTeamAlive(false);
+            TeamManager.setSpectatorMode(p);
+            playerContainer.writeData(p.getUniqueId(), serverPlayer);
+            String teamName = config.getString("teams." + serverPlayer.getTeamName() + ".name");
+            Text.of("&6&lThe " + (serverPlayer.getTeamColor()) + teamName + " &6&lKing is dead!").send(Bukkit.getOnlinePlayers());
+        } else if (!serverPlayer.isTeamAlive() && serverPlayer.isExemptFromKick()) {
+            TeamManager.setSpectatorMode(p);
+        }
+        else {
+            PlayerHandler.tempBanPlayer(p, config.getInt("DUNGEON_TIME"), config.getString("DUNGEON_MESSAGE"));
+        }
+    }
+
+    @EventHandler
+    public void onDeath(EntityDeathEvent e){
+        Player p = (Player)e.getEntity();
+
+        System.out.println("onDeath: " + e + p.getName());
+
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
         ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
 
