@@ -3,12 +3,14 @@ package io.github.cats1337.battlekingdom.events;
 import com.marcusslover.plus.lib.text.Text;
 import io.github.cats1337.battlekingdom.BattleKingdom;
 import io.github.cats1337.battlekingdom.playerdata.*;
+
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
@@ -40,45 +42,44 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent e) {
         Player p = e.getPlayer();
+        UUID playerUUID = p.getUniqueId();
         System.out.println("onPlayerDeath: " + e + p.getName());
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
-        ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
+        ServerPlayer serverPlayer = playerContainer.loadData(playerUUID);
 
-        if(serverPlayer.isTeamLeader()) {
-            serverPlayer.setTeamAlive(false);
+        String teamName = config.getString("teams." + serverPlayer.getTeamName() + ".name");
+
+        if (serverPlayer.isTeamLeader()) {
+            TeamManager.setRespawnStatus(teamName, false);
             TeamManager.setSpectatorMode(p);
-            playerContainer.writeData(p.getUniqueId(), serverPlayer);
-            String teamName = config.getString("teams." + serverPlayer.getTeamName() + ".name");
-            Text.of("&6&lThe " + (serverPlayer.getTeamColor()) + teamName + " &6&lKing is dead!").send(Bukkit.getOnlinePlayers());
-        } else if (!serverPlayer.isTeamAlive() && serverPlayer.isExemptFromKick()) {
-            TeamManager.setSpectatorMode(p);
+            Text.of(TeamManager.getTeamColorCode(teamName) + teamName + "'s &e&l👑 &6&lKing &e&l👑 &6has been &cvanquished!").send(Bukkit.getOnlinePlayers());
+            for (ServerPlayer player : playerContainer.getValues()) {
+                if (player.getTeamName().equals(serverPlayer.getTeamName())) {
+                    Player teamPlayer = Bukkit.getPlayer(player.getUuid());
+                    if (teamPlayer != null) {
+                        Text.of("&c&oYou will no longer respawn!").send(teamPlayer);
+                    }
+                }
+            }
         }
-        else {
-            PlayerHandler.tempBanPlayer(p, config.getInt("DUNGEON_TIME"), config.getString("DUNGEON_MESSAGE"));
+
+        if (!TeamManager.getRespawnStatus(teamName)) {
+            if (serverPlayer.isExemptFromKick() || serverPlayer.isTeamLeader()) {
+                TeamManager.setSpectatorMode(p);
+                TeamManager.setEliminated(p, true);
+            }
+            if (!serverPlayer.isExemptFromKick() && !serverPlayer.isTeamLeader()) {
+                PlayerHandler.tempBanPlayer(p, config.getInt("DUNGEON_TIME"), config.getString("DUNGEON_MESSAGE"));
+                PlayerHandler.setOffEliminated(p.getName(), true);
+            }
+        }
+
+//        check if everyone on the team is eliminated
+        // if all players on the team are eliminated, set team eliminated status to true
+        if (TeamManager.getTeamEliminated(teamName)) {
+            TeamManager.setTeamEliminated(teamName, true);
+            Text.of(TeamManager.getTeamColorCode(teamName) + teamName + " &chas been &celiminated!").send(Bukkit.getOnlinePlayers());
+
         }
     }
-
-    @EventHandler
-    public void onDeath(EntityDeathEvent e){
-        Player p = (Player)e.getEntity();
-
-        System.out.println("onDeath: " + e + p.getName());
-
-        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
-        ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
-
-        if(serverPlayer.isTeamLeader()) {
-            serverPlayer.setTeamAlive(false);
-            TeamManager.setSpectatorMode(p);
-            playerContainer.writeData(p.getUniqueId(), serverPlayer);
-            String teamName = config.getString("teams." + serverPlayer.getTeamName() + ".name");
-            Text.of("&6&lThe " + (serverPlayer.getTeamColor()) + teamName + " &6&lKing is dead!").send(Bukkit.getOnlinePlayers());
-        } else if (!serverPlayer.isTeamAlive() && serverPlayer.isExemptFromKick()) {
-            TeamManager.setSpectatorMode(p);
-        }
-        else {
-            PlayerHandler.tempBanPlayer(p, config.getInt("DUNGEON_TIME"), config.getString("DUNGEON_MESSAGE"));
-        }
-    }
-
 }

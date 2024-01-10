@@ -21,17 +21,10 @@ public class ServerPlayer {
     private String teamName;
     private String teamColor; // set the team colors to be RED, GREEN, BLUE, YELLOW
     private boolean isTeamLeader;
-    private boolean isTeamAlive;
+    private boolean teamRespawn;
+    private boolean isTeamEliminated;
     private boolean isEliminated;
     private boolean isExemptFromKick;
-
-    // Constructor to set default team color based on team name
-//    public ServerPlayer(UUID uuid, String playerName, String teamName) {
-//        this.uuid = uuid;
-//        this.playerName = (playerName != null && !playerName.isEmpty()) ? playerName : "";
-//        this.teamName = (teamName != null) ? teamName : "";
-//        this.teamColor = getDefaultTeamColor(this.teamName);
-//    }
 
     public ServerPlayer(UUID uuid, String playerName, String teamName) {
         this.uuid = uuid;

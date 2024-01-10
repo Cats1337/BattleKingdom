@@ -5,12 +5,14 @@ import io.github.cats1337.battlekingdom.BattleKingdom;
 import org.bukkit.BanEntry;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.jetbrains.annotations.NotNull;
+import com.destroystokyo.paper.profile.PlayerProfile;
 
 import java.util.Collection;
 import java.util.Date;
@@ -39,31 +41,91 @@ public class PlayerHandler implements Listener {
         return BattleKingdom.getInstance().getContainerManager().getByType(PlayerContainer.class).get();
     }
 
-    // TODO: Doesn't actually ban, might just use console :/
     public static void tempBanPlayer(Player p, int dungeonTime, String reason) {
         long durationInMillis = (long) dungeonTime * 60 * 60 * 1000;
         Date banTime = new Date(System.currentTimeMillis() + durationInMillis);
-
-        BanList banList = Bukkit.getBanList(BanList.Type.NAME);
-        BanEntry banEntry = banList.getBanEntry(p.getName());
-
+    
+        BanList<PlayerProfile> banList = Bukkit.getBanList(BanList.Type.PROFILE);
+        PlayerProfile profile = (p.getPlayerProfile());
+        BanEntry<PlayerProfile> banEntry = banList.getBanEntry(profile);        
+    
         if (banEntry == null) {
-            banList.addBan(p.getName(), reason, banTime, null);
+            banList.addBan(profile, ("§c" + reason), banTime, null);
+            p.kickPlayer("§c" + reason);
         } else {
             banEntry.setExpiration(banTime);
         }
     }
-
-    public static void unbanPlayer(Player p){
-        if (p.isBanned()) {
-            BanList banList = Bukkit.getBanList(BanList.Type.PROFILE);
-            BanEntry banEntry = banList.getBanEntry(p.getName());
+    
+    public static boolean untempbanPlayer(String p){
+                                            System.out.println("untempbanPlayer: " + p);
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(p);
+                                            System.out.println("offlinePlayer: " + offlinePlayer);
+        if (offlinePlayer.isBanned()) {
+                                            System.out.println("offlinePlayer.isBanned(): " + offlinePlayer.isBanned());
+            BanList<PlayerProfile> banList = Bukkit.getBanList(BanList.Type.PROFILE);
+            PlayerProfile profile = Bukkit.createProfile(offlinePlayer.getUniqueId(), p);
+            BanEntry<PlayerProfile> banEntry = banList.getBanEntry(profile);
+                                            System.out.println("banEntry: " + banEntry);
+                                            System.out.println("banList: " + banList);
             if (banEntry != null) {
-                banList.pardon(banEntry);
+                banList.pardon(profile);
+                                            System.out.println("unbanned" + profile);
+                return true;
             }
         }
+        return false;
     }
 
+    public static boolean untempbanTeam(String t){
+                                            System.out.println("untempbanTeam: " + t);
+        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
+        for (ServerPlayer player : playerContainer.getValues()) {
+            if (player.getTeamName().equals(t)) {
+                                            System.out.println("player.getTeamName().equals(t): " + true);
+                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(player.getUuid());
+                                            System.out.println("offlinePlayer: " + offlinePlayer);
+                if (offlinePlayer.isBanned()) {
+                                            System.out.println("offlinePlayer.isBanned(): " + offlinePlayer.isBanned());
+                    BanList<PlayerProfile> banList = Bukkit.getBanList(BanList.Type.PROFILE);
+                    PlayerProfile profile = Bukkit.createProfile(offlinePlayer.getUniqueId(), player.getPlayerName());
+                    BanEntry<PlayerProfile> banEntry = banList.getBanEntry(profile);
+                                            System.out.println("banEntry: " + banEntry);
+                                            System.out.println("banList: " + banList);
+                    if (banEntry != null) {
+                        banList.pardon(profile);
+                                            System.out.println("unbanned" + profile);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean setOffEliminated(String p, boolean status) {
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(p);
+        // set player to not eliminated
+        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
+        ServerPlayer serverPlayer = playerContainer.loadData(offlinePlayer.getUniqueId());
+
+        serverPlayer.setEliminated(status);
+        playerContainer.writeData(offlinePlayer.getUniqueId(), serverPlayer);
+        return true;
+    }
+
+    public static boolean setOffEliminatedTeam(String t, boolean status) {
+        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
+        for (ServerPlayer player : playerContainer.getValues()) {
+            if (player.getTeamName().equals(t)) {
+                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(player.getUuid());
+                ServerPlayer serverPlayer = playerContainer.loadData(offlinePlayer.getUniqueId());
+                serverPlayer.setEliminated(status);
+                playerContainer.writeData(offlinePlayer.getUniqueId(), serverPlayer);
+            }
+        }
+        return true;
+    }
 
     @EventHandler
     public void onLogin(PlayerLoginEvent e) {
