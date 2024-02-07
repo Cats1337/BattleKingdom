@@ -25,6 +25,7 @@ public class ServerPlayer {
     private boolean isTeamEliminated;
     private boolean isEliminated;
     private boolean isExemptFromKick;
+    private boolean isBystander;
 
     public ServerPlayer(UUID uuid, String playerName, String teamName) {
         this.uuid = uuid;
@@ -39,8 +40,6 @@ public class ServerPlayer {
         this.teamName = (teamName != null) ? teamName : "";
 //        this.teamColor = getDefaultTeamColor(this.teamName);
     }
-
-
 
     // Method to get default team color based on team name
 //    private String getDefaultTeamColor(String team) {

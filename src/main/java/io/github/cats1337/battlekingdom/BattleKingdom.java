@@ -34,11 +34,20 @@ public final class BattleKingdom extends JavaPlugin {
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new PlayerHandler(), this);
         pm.registerEvents(new PlayerListener(), this);
+
+        Bukkit.getConsoleSender().sendMessage("§e[§bBattleKingdom§e] §bBattleKingdom has been enabled!");
     }
 
     @Override
     public void onDisable() {
         cmdManager.clearCommands();
+    }
+
+//    reload
+    public static void reload() {
+        BattleKingdom.getInstance().onDisable();
+        Bukkit.getConsoleSender().sendMessage("§e[§bBattleKingdom§e] §3BattleKingdom has been reloaded!");
+        BattleKingdom.getInstance().onEnable();
     }
 
     public ContainerManager getContainerManager() {return containerManager;}

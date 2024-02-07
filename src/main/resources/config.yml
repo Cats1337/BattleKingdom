@@ -3,15 +3,15 @@ DUNGEON_TIME: 24 # in hours
 DUNGEON_MESSAGE: "Your king has fallen, you have been sent to the dungeon." # tempban message
 teams:
   TEAM1:
-    name: TEAM1
-    color: RED
+    displayname: Earth
+    color: GREEN
     leader: null
     world: world
     x: 0.0
     y: 90.0
     z: 0.0
   TEAM2:
-    name: TEAM2
+    displayname: Water
     color: BLUE
     leader: null
     world: world
@@ -19,15 +19,15 @@ teams:
     y: 90.0
     z: 0.0
   TEAM3:
-    name: TEAM3
-    color: GREEN
+    displayname: Fire
+    color: RED
     leader: null
     world: world
     x: 0.0
     y: 90.0
     z: 0.0
   TEAM4:
-    name: TEAM4
+    displayname: Air
     color: YELLOW
     leader: null
     world: world
