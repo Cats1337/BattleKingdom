@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
-import static io.github.cats1337.battlekingdom.playerdata.TeamManager.plugin;
+//import static io.github.cats1337.battlekingdom.playerdata.TeamManager.plugin;
 
 @Data
 @Accessors(chain = true)
@@ -18,8 +18,8 @@ public class ServerPlayer {
 
     @Setter(AccessLevel.PUBLIC)
     private String playerName; // set to player's minecraft username
-    private String teamName;
-    private String teamColor; // set the team colors to be RED, GREEN, BLUE, YELLOW
+    private String teamName; // name of the team the player is on (literal)
+//    private String teamColor; // set the team colors to be RED, GREEN, BLUE, YELLOW
     private boolean isTeamLeader;
     private boolean teamRespawn;
     private boolean isTeamEliminated;
@@ -37,15 +37,15 @@ public class ServerPlayer {
         }
 
         this.teamName = (teamName != null) ? teamName : "";
-        this.teamColor = getDefaultTeamColor(this.teamName);
+//        this.teamColor = getDefaultTeamColor(this.teamName);
     }
 
 
 
     // Method to get default team color based on team name
-    private String getDefaultTeamColor(String team) {
-        String key = "teams." + team + ".name";
-        return plugin.getConfig().getString(key, "GREY"); // Default to "GREY" if the key is not found
-    }
+//    private String getDefaultTeamColor(String team) {
+//        String key = "teams." + team + ".name";
+//        return plugin.getConfig().getString(key, "GRAY"); // Default to "GRAY" if the key is not found
+//    }
 
 }

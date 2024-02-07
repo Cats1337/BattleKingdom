@@ -21,7 +21,6 @@ import java.util.UUID;
 
 public class PlayerHandler implements Listener {
     private static PlayerHandler instance;
-
     public PlayerHandler() {
         instance = this;
     }
@@ -35,7 +34,7 @@ public class PlayerHandler implements Listener {
     }
 
     public PlayerContainer getContainer() {
-        if (!BattleKingdom.getInstance().getContainerManager().getByType(PlayerContainer.class).isPresent()){
+        if (BattleKingdom.getInstance().getContainerManager().getByType(PlayerContainer.class).isEmpty()){
             return null;
         }
         return BattleKingdom.getInstance().getContainerManager().getByType(PlayerContainer.class).get();
@@ -58,19 +57,13 @@ public class PlayerHandler implements Listener {
     }
     
     public static boolean untempbanPlayer(String p){
-                                            System.out.println("untempbanPlayer: " + p);
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(p);
-                                            System.out.println("offlinePlayer: " + offlinePlayer);
         if (offlinePlayer.isBanned()) {
-                                            System.out.println("offlinePlayer.isBanned(): " + offlinePlayer.isBanned());
             BanList<PlayerProfile> banList = Bukkit.getBanList(BanList.Type.PROFILE);
             PlayerProfile profile = Bukkit.createProfile(offlinePlayer.getUniqueId(), p);
             BanEntry<PlayerProfile> banEntry = banList.getBanEntry(profile);
-                                            System.out.println("banEntry: " + banEntry);
-                                            System.out.println("banList: " + banList);
             if (banEntry != null) {
                 banList.pardon(profile);
-                                            System.out.println("unbanned" + profile);
                 return true;
             }
         }
@@ -78,28 +71,30 @@ public class PlayerHandler implements Listener {
     }
 
     public static boolean untempbanTeam(String t){
-                                            System.out.println("untempbanTeam: " + t);
         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
         for (ServerPlayer player : playerContainer.getValues()) {
             if (player.getTeamName().equals(t)) {
-                                            System.out.println("player.getTeamName().equals(t): " + true);
                 OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(player.getUuid());
-                                            System.out.println("offlinePlayer: " + offlinePlayer);
                 if (offlinePlayer.isBanned()) {
-                                            System.out.println("offlinePlayer.isBanned(): " + offlinePlayer.isBanned());
                     BanList<PlayerProfile> banList = Bukkit.getBanList(BanList.Type.PROFILE);
                     PlayerProfile profile = Bukkit.createProfile(offlinePlayer.getUniqueId(), player.getPlayerName());
                     BanEntry<PlayerProfile> banEntry = banList.getBanEntry(profile);
-                                            System.out.println("banEntry: " + banEntry);
-                                            System.out.println("banList: " + banList);
                     if (banEntry != null) {
                         banList.pardon(profile);
-                                            System.out.println("unbanned" + profile);
                         return true;
                     }
                 }
             }
         }
+        // get banned-players.json file from container
+        // get for all players in the team that are marked as eliminated
+        // unban all players in the team
+
+        // check if ban message is the same as the one in the config, if not, ignore them
+
+
+
+
         return false;
     }
 

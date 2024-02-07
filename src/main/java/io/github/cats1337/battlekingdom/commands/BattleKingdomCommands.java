@@ -1,7 +1,9 @@
 package io.github.cats1337.battlekingdom.commands;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
 import com.marcusslover.plus.lib.command.TabCompleteContext;
 import com.marcusslover.plus.lib.text.Text;
+import io.github.cats1337.battlekingdom.BattleKingdom;
 import io.github.cats1337.battlekingdom.playerdata.PlayerContainer;
 import io.github.cats1337.battlekingdom.playerdata.PlayerHandler;
 import io.github.cats1337.battlekingdom.playerdata.ServerPlayer;
@@ -10,8 +12,7 @@ import com.marcusslover.plus.lib.command.Command;
 import com.marcusslover.plus.lib.command.CommandContext;
 import com.marcusslover.plus.lib.command.ICommand;
 import io.github.cats1337.battlekingdom.utils.ITabCompleterHelper;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
+import org.bukkit.*;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -68,7 +69,7 @@ public class BattleKingdomCommands implements ICommand {
 
     private final List<String> subCommands = List.of("help", "set", "randomteams", "info", "list", "respawn", "kick", "reset");
     private final List<String> publicSubCommands = List.of("help", "info", "list");
-
+    static final BattleKingdom plugin = BattleKingdom.getInstance();
     @Override
     public boolean execute(@NotNull CommandContext cmd){
         CommandSender sender = cmd.sender();
@@ -147,14 +148,20 @@ public class BattleKingdomCommands implements ICommand {
                                         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
                                         ServerPlayer serverPlayer = playerContainer.loadData(playerUUID);
                                         serverPlayer.setTeamName(team);
+                                        TeamManager.setPlayerScoreboardTeam(p, team);
+                                        TeamManager.setPlayerSpawnPoint(p, team);
+                                        serverPlayer.setTeamLeader(false);
+                                        serverPlayer.setEliminated(false); // revive player
                                         playerContainer.writeData(playerUUID, serverPlayer);
                                         Text.of("&aSuccessfully set " + playerName + "'s team to " + team + ".").send(sender);
                                     }
+                                    return true;
                                 } else {
                                     Text.of("&cYou do not have permission to use this command.").send(sender);
                                     return true;
                                 }
                             case "leader":
+                                Bukkit.getConsoleSender().sendMessage("Leader");
                                 if (args.length < 3) {
                                     Text.of("&cUsage: /kingdom set leader <team> <player>").send(sender);
                                     return true;
@@ -171,6 +178,10 @@ public class BattleKingdomCommands implements ICommand {
                                             return true;
                                         }
                                         TeamManager.setTeamLeader(p, team);
+                                        // set team status to alive
+                                        TeamManager.setRespawnStatus(team, true);
+                                        TeamManager.setEliminated(p, false);
+                                        TeamManager.setTeamEliminated(team, false);
                                         Text.of("&aSuccessfully set " + p.getName() + " as the leader of " + team + ".").send(sender);
                                     }
                                     return true;
@@ -199,7 +210,7 @@ public class BattleKingdomCommands implements ICommand {
                                 } else if (sender.hasPermission("kingdom.set.name")){
                                     String team = args[2];
                                     String name = args[3];
-                                    TeamManager.setTeamName(team, name);
+                                    TeamManager.setTeamDisplayName(team, name);
                                     Text.of("&aSuccessfully set " + team + "'s name to " + name + ".").send(sender);
                                     return true;
                                 } else {
@@ -221,19 +232,29 @@ public class BattleKingdomCommands implements ICommand {
                                 return true;
                                 }
                             case "exempt":
-                                if (args.length < 3) {
-                                    Text.of("&cUsage: /kingdom set exempt <player>").send(sender);
+                                if (args.length < 4) {
+                                    Text.of("&cUsage: /kingdom set exempt <player> <true|false>").send(sender);
                                     return true;
                                 } else if (sender.hasPermission("kingdom.set.exempt")){
                                     String playerName = args[2];
+                                    String bool = args[3];
                                     Player p = Bukkit.getPlayer(playerName);
                                     if (p == null) {
                                         Text.of("&cPlayer not found.").send(sender);
                                         return true;
                                     }
-                                    TeamManager.setExemptFromKick(p, true);
-                                    Text.of("&aSuccessfully set " + playerName + " as exempt from kick.").send(sender);
-                                    return true;
+                                    if (bool.equalsIgnoreCase("false")) {
+                                        TeamManager.setExemptFromKick(p, false);
+                                        Text.of("&aSuccessfully set " + playerName + " as exempt from kick.").send(sender);
+                                        return true;
+                                    } else if (bool.equalsIgnoreCase("true")) {
+                                        TeamManager.setExemptFromKick(p, true);
+                                        Text.of("&aSuccessfully set " + playerName + " as exempt from kick.").send(sender);
+                                        return true;
+                                    } else {
+                                        Text.of("&cInvalid argument. Use true or false.").send(sender);
+                                        return true;
+                                    }
                                 } else {
                                     Text.of("&cYou do not have permission to use this command.").send(sender);
                                 return true;
@@ -282,7 +303,7 @@ public class BattleKingdomCommands implements ICommand {
                         }
                         return true;
                     }
-                case "info":
+                case "info", "list":
                     if (args.length < 2) {
                         Text.of("&cInvalid Command Usage.").send(sender);
                         Text.of("\n&f/kingdom info &e<team|player>\n" +
@@ -293,13 +314,15 @@ public class BattleKingdomCommands implements ICommand {
                         String subArg = args[1];
                         switch (subArg) {
                             case "team":
-                                if (args.length < 3 && sender.hasPermission("kingdom.info.team")) {
+                                if (args.length < 3 && (sender.hasPermission("kingdom.info.team") || sender.hasPermission("kingdom.list.team"))) {
                                     Text.of("&cYou must specify a team.").send(sender);
                                     return true;
-                                } else if (sender.hasPermission("kingdom.info.team")) {
+                                } else if (sender.hasPermission("kingdom.info.team") || sender.hasPermission("kingdom.list.team")) {
                                     String team = args[2];
+//                                    get team display name
+
                                     StringBuilder teamInfo = new StringBuilder();
-                                    teamInfo.append("&b[« &4&l💠 &b»]" + TeamManager.getTeamColorCode(team) + team + "&b[« &4&l💠 &b»]\n");
+                                    teamInfo.append("&b[« &4&l💠 &b»] " + TeamManager.getTeamColorCode(team) + TeamManager.getTeamDisplayName(team) + " &b[« &4&l💠 &b»]\n");
 //                                            .append("&7Status: " + TeamManager.getTeamStatus(team) + "\n");
                                     if (TeamManager.getTeamEliminated(team)){
                                         teamInfo.append("&7Eliminated: &c" + TeamManager.getTeamEliminated(team) + "\n");
@@ -325,10 +348,10 @@ public class BattleKingdomCommands implements ICommand {
                                     return true;
                                 }
                             case "player":
-                                if (args.length < 3 && sender.hasPermission("kingdom.info.player")) {
+                                if (args.length < 3 && (sender.hasPermission("kingdom.info.player") || sender.hasPermission("kingdom.list.player"))) {
                                     Text.of("&cYou must specify a player.").send(sender);
                                     return true;
-                                } else if (sender.hasPermission("kingdom.info.player")) {
+                                } else if ((sender.hasPermission("kingdom.info.player") || sender.hasPermission("kingdom.list.player"))) {
                                     String playerName = args[2];
                                     Player p = Bukkit.getPlayer(playerName);
                                     if (p == null) {
@@ -340,7 +363,7 @@ public class BattleKingdomCommands implements ICommand {
                                     if (TeamManager.isTeamLeader(p)) {
                                         playerInfo.append("&e&l👑 &6&lleader&7 ");
                                     }
-                                    playerInfo.append("&9" + p.getName() + "&7 is on " + TeamManager.getTeamColorCode(TeamManager.getTeamName(p)) + TeamManager.getTeamName(p));
+                                    playerInfo.append(TeamManager.getTeamColorCode(TeamManager.getLiteralTeamName(p)) + p.getName() + "&7 is on " + TeamManager.getTeamColorCode(TeamManager.getLiteralTeamName(p)) + TeamManager.getTeamDisplayName(p));
 
                                     if (sender.hasPermission("kingdom.admin")) {
                                         if (TeamManager.isExemptFromKick(p)) {
@@ -349,10 +372,10 @@ public class BattleKingdomCommands implements ICommand {
                                             playerInfo.append("\n&7Exempt:&c " + TeamManager.isExemptFromKick(p));
                                         }
                                     }
-                                    if(TeamManager.getRespawnStatus(TeamManager.getTeamName(p))) {
-                                        playerInfo.append("\n&7Team Respawn: &a" + TeamManager.getRespawnStatus(TeamManager.getTeamName(p)));
+                                    if(TeamManager.getRespawnStatus(TeamManager.getLiteralTeamName(p))) {
+                                        playerInfo.append("\n&7Team Respawn: &a" + TeamManager.getRespawnStatus(TeamManager.getLiteralTeamName(p)));
                                     } else {
-                                        playerInfo.append("\n&7Team Respawn: &c" + TeamManager.getRespawnStatus(TeamManager.getTeamName(p)));
+                                        playerInfo.append("\n&7Team Respawn: &c" + TeamManager.getRespawnStatus(TeamManager.getLiteralTeamName(p)));
                                     }
                                     if(TeamManager.isEliminated(p)) {
                                         playerInfo.append("\n&7Eliminated: &c" + TeamManager.isEliminated(p));
@@ -363,37 +386,6 @@ public class BattleKingdomCommands implements ICommand {
                                     Text.of(playerInfo.toString()).send(sender);
                                     return true;
                                 } else {
-                                    Text.of("&cYou do not have permission to use this command.").send(sender);
-                                    return true;
-                                }
-                        }
-                        return true;
-                    }
-                case "list":
-                    if (args.length < 2) {
-                        Text.of("&cInvalid Command Usage.").send(sender);
-                        Text.of("\n&f/kingdom list &e<team>\n" +
-                                "&7run /kingdom help for more info"
-                        ).send(sender);
-                        return true;
-                    }
-                    else {
-                        String subArg = args[1];
-                        if (subArg.equals("team")) {
-                            if (args.length == 2 && sender.hasPermission("kingdom.list.team")) {
-                                Text.of("&cYou must specify a team.").send(sender);
-                                return true;
-                            } else if (sender.hasPermission("kingdom.list.team")) {
-                                String team = args[2];
-                                StringBuilder teamInfo = new StringBuilder();
-
-                                teamInfo.append("&b[« &4&l💠 &b»] " + TeamManager.getTeamColorCode(team) + team + " &b[« &4&l💠 &b»]\n")
-                                        .append("&9Team Status: " + TeamManager.getTeamStatus(team) + "\n")
-                                        .append("&e&l👑 &7Leader: &6" + TeamManager.getLeaderStatus(team) + "\n")
-                                        .append("&7Members: " + TeamManager.getTeamMembers(team));
-                                Text.of(teamInfo.toString()).send(sender);
-                                return true;
-                            } else {
                                     Text.of("&cYou do not have permission to use this command.").send(sender);
                                     return true;
                                 }
@@ -423,6 +415,8 @@ public class BattleKingdomCommands implements ICommand {
                                             if (!TeamManager.getRespawnStatus(serverPlayer.getTeamName())) {
                                                 TeamManager.setRespawnStatus(serverPlayer.getTeamName(), true);
                                                 TeamManager.setEliminated(p, false);
+                                                TeamManager.teleportToTeamSpawnPoint(p);
+                                                p.setGameMode(GameMode.SURVIVAL);
                                             }
                                             Text.of("&aSuccessfully revived " + p.getName() + ".").send(sender);
                                             if (serverPlayer.isExemptFromKick()) {
@@ -436,13 +430,14 @@ public class BattleKingdomCommands implements ICommand {
                                                 TeamManager.setRespawnStatus(serverPlayer.getTeamName(), true);
                                                 TeamManager.setEliminated(p, false);
                                                 TeamManager.setTeamEliminated(serverPlayer.getTeamName(), false);
-                                                Text.of("&aLeader Revived, " + TeamManager.getTeamName(p) + " revived.").send(sender);
+                                                Text.of("&aLeader Revived, " + TeamManager.getTeamColor(TeamManager.getLiteralTeamName(p)) + TeamManager.getTeamDisplayName(p) + " revived.").send(sender);
                                             }
                                         }
                                     });
                                      if (PlayerHandler.untempbanPlayer(playerName) && PlayerHandler.setOffEliminated(playerName, false)) {
-                                            Text.of("&aSuccessfully revived " + playerName + ".").send(sender);
-                                        } else if (!PlayerHandler.untempbanPlayer(playerName)){
+                                         Text.of("&aSuccessfully revived " + playerName + ".").send(sender);
+                                         return true;
+                                     } else if (!PlayerHandler.untempbanPlayer(playerName)) {
                                             Text.of("&cUnable to revive " + playerName + ", not found.").send(sender);
                                      }
                                     return true;
@@ -456,21 +451,42 @@ public class BattleKingdomCommands implements ICommand {
                                     return true;
                                 } else if (sender.hasPermission("kingdom.respawn.team")) {
                                     String team = args[2].toUpperCase();
-
                                     Bukkit.getOnlinePlayers().forEach(p -> {
                                         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
                                         ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
                                         if (serverPlayer.getTeamName().equals(team)) {
-                                            TeamManager.setRespawnStatus(team, true);
-                                            TeamManager.setTeamEliminated(team, false);
-                                            if (PlayerHandler.untempbanTeam(team) && PlayerHandler.setOffEliminatedTeam(team, false)) {
-                                                Text.of("&aSuccessfully revived " + team + ".").send(sender);
-                                            } else {
-                                                Text.of("&cUnable to revive " + team + ".").send(sender);
+                                            TeamManager.setEliminated(p, false);
+                                            TeamManager.teleportToTeamSpawnPoint(p);
+                                            PlayerHandler.setOffEliminated(p.getName(), false);
+                                            Player ofp = Bukkit.getPlayer(p.getUniqueId());
+                                            if (ofp != null) {
+                                                PlayerHandler.untempbanPlayer(ofp.getName());
+                                                Text.of("&aRevived " + ofp + ".").send(sender);
                                             }
+                                            p.setGameMode(GameMode.SURVIVAL);
                                         }
                                     });
-                                    Text.of("&aSuccessfully revived " + team + ".").send(sender);
+
+                                    PlayerHandler.untempbanTeam(team);
+                                    TeamManager.setRespawnStatus(team, true);
+                                    TeamManager.setTeamEliminated(team, false);
+                                    // offline players
+                                    PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
+                                    for (ServerPlayer offlinePlayer : playerContainer.getValues()) {
+                                        if (offlinePlayer.getTeamName().equals(team)) {
+                                            Player offline = Bukkit.getPlayer(offlinePlayer.getUuid());
+                                            if (offline == null) {
+                                                PlayerHandler.setOffEliminated(offlinePlayer.getPlayerName(), false);
+                                                Player ofp = Bukkit.getOfflinePlayer(offlinePlayer.getUuid()).getPlayer();
+                                                if (ofp != null) {
+//                                                    PlayerHandler.untempbanPlayer(ofp.getName());
+                                                    TeamManager.setEliminated(ofp, false);
+                                                    TeamManager.teleportToTeamSpawnPoint(ofp);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Text.of("&aRevived " + team + ".").send(sender);
                                     return true;
                                 } else {
                                 Text.of("&cYou do not have permission to use this command.").send(sender);
@@ -498,6 +514,7 @@ public class BattleKingdomCommands implements ICommand {
                                         PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
                                         ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
                                         serverPlayer.setTeamName("");
+                                        TeamManager.removePlayerScoreboardTeam(p);
                                         if (serverPlayer.isTeamLeader()) {
                                             Text.of("&cYou cannot kick the team leader.").send(sender);
                                         } else {
@@ -523,20 +540,18 @@ public class BattleKingdomCommands implements ICommand {
                     } else {
                         String subArg = args[1];
                         switch (subArg) {
+                            // require 'all' to be used with caution, by having a confirmation prompt
                             case "all":
-                                if (sender.hasPermission("kingdom.reset.all")) {
-                                    Bukkit.getOnlinePlayers().forEach(p -> {
-                                        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
-                                        ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
-                                        serverPlayer.setTeamName("");
-                                        serverPlayer.setTeamLeader(false);
-                                        serverPlayer.setTeamRespawn(true);
-                                        playerContainer.writeData(p.getUniqueId(), serverPlayer);
-                                    });
+                                if (args.length == 2 && sender.hasPermission("kingdom.reset.all")) {
+                                    Text.of("&cAre you sure you want to reset &o&nall&c player data?\n&4/kingdom reset all confirm&c to reset &4&o&lALL data").send(sender);
+                                    return true;
+                                } else if (sender.hasPermission("kingdom.reset.all")) {
+                                    TeamManager.resetAllData();
                                     Text.of("&aSuccessfully reset all player data.").send(sender);
                                     return true;
                                 } else {
                                     Text.of("&cYou do not have permission to use this command.").send(sender);
+                                    return true;
                                 }
                             case "player":
                                 if (args.length == 2 && sender.hasPermission("kingdom.reset.player")) {
@@ -557,10 +572,7 @@ public class BattleKingdomCommands implements ICommand {
                                         Text.of("&cPlayer not found in database.").send(sender);
                                         return true;
                                     }
-
-                                    serverPlayer.setTeamName("");
-                                    serverPlayer.setTeamLeader(false);
-                                    playerContainer.writeData(playerUUID, serverPlayer);
+                                    TeamManager.resetPlayerData(p);
                                     Text.of("&aSuccessfully reset " + playerName + "'s data.").send(sender);
                                     return true;
                                 } else {
@@ -573,17 +585,7 @@ public class BattleKingdomCommands implements ICommand {
                                     return true;
                                 } else if (sender.hasPermission("kingdom.reset.team")) {
                                     String team = args[2].toUpperCase();
-                                    Bukkit.getOnlinePlayers().forEach(p -> {
-                                        PlayerContainer playerContainer = PlayerHandler.getInstance().getContainer();
-                                        ServerPlayer serverPlayer = playerContainer.loadData(p.getUniqueId());
-                                        if (serverPlayer.getTeamName().equals(team)) {
-                                            serverPlayer.setTeamName("");
-                                            serverPlayer.setTeamLeader(false);
-                                            serverPlayer.setTeamRespawn(true);
-                                            playerContainer.writeData(p.getUniqueId(), serverPlayer);
-                                            Text.of("&aSuccessfully reset " + team + "'s data.").send(sender);
-                                        }
-                                    });
+                                    TeamManager.resetTeamData(team);
                                     return true;
                                 } else {
                                     Text.of("&cYou do not have permission to use this command.").send(sender);
@@ -631,7 +633,7 @@ public class BattleKingdomCommands implements ICommand {
             }
             if (args.length == 3) {
                 if (args[1].equalsIgnoreCase("team") || args[1].equalsIgnoreCase("leader") || args[1].equalsIgnoreCase("spawn") || args[1].equalsIgnoreCase("name") || args[1].equalsIgnoreCase("color")) {
-                    return ITabCompleterHelper.tabComplete(args[2], TeamManager.getTeamNames());
+                    return ITabCompleterHelper.tabComplete(args[2], TeamManager.getLiteralTeamNames());
                 }
                 if (args[1].equalsIgnoreCase("player") || args[1].equalsIgnoreCase("exempt")) {
                     return ITabCompleterHelper.tabComplete(args[2], Bukkit.getOnlinePlayers()
@@ -646,6 +648,9 @@ public class BattleKingdomCommands implements ICommand {
                             .stream()
                             .map(Player::getName)
                             .toList());
+                }
+                if (args[1].equalsIgnoreCase("exempt")) {
+                    return ITabCompleterHelper.tabComplete(args[3], List.of("true", "false"));
                 }
             }
         }
@@ -663,7 +668,7 @@ public class BattleKingdomCommands implements ICommand {
             }
             if (args.length == 3) {
                 if (args[1].equalsIgnoreCase("team")) {
-                    return ITabCompleterHelper.tabComplete(args[2], TeamManager.getTeamNames());
+                    return ITabCompleterHelper.tabComplete(args[2], TeamManager.getLiteralTeamNames());
                 }
                 if (args[1].equalsIgnoreCase("player")) {
                     return ITabCompleterHelper.tabComplete(args[2], Bukkit.getOnlinePlayers()
